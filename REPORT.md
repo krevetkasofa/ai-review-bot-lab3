@@ -102,7 +102,33 @@ pull_request (opened, synchronize)
 
 ### Раунд 1 — PR #1 (12 проблем, 4 приманки)
 
-Заложено: 3 проблемы безопасности (SQL-инъекция через f-строку, ключ в коде, md5 для пароля), 6 ошибок (граница `>` вместо `>=` по docstring, `tags=[]`, деление на `len` пустого списка, сетевой вызов без `try`/`timeout`, голый `except: pass`, функция без теста), 3 стилевые (лишний импорт, `CalcTotal`, `print`). Приманки: `get_orders_by_ids` (SQL из f-строки, но только с плейсхолдерами `?`), `pick_promo_banner` (`random.choice` для баннера), `current_git_revision` (`subprocess` со списком аргументов), `load_orders_file` (`except Exception` с `logger.exception` и `raise`).
+
+В PR #1 (файлы `app/orders.py`, `app/auth.py`, `tests/test_orders.py`) заложены 12 проблем: по одной на каждое правило чек-листа.
+
+| № | Файл, функция | Что не так | Правило | Severity |
+|---|---|---|---|---|
+| P1 | `orders.py`, `find_orders_by_customer` | SQL-запрос собирается f-строкой из `name` (SQL-инъекция) | S1 | error |
+| P2 | `orders.py`, `PAYMENT_API_KEY` | ключ платёжного сервиса записан в код | S2 | error |
+| P3 | `auth.py`, `register_user` | пароль хешируется `md5` без соли | S3 | error |
+| P4 | `orders.py`, `apply_discount` | по описанию скидка «от 10 и более», а условие `quantity > 10` | B5 | warning |
+| P5 | `orders.py`, `add_item` | изменяемое значение по умолчанию `tags=[]` | B3 | warning |
+| P6 | `orders.py`, `average_order_value` | деление на `len(totals)` без проверки на пустой список | B4 | warning |
+| P7 | `orders.py`, `get_shipping_quote` | сетевой вызов `urlopen` без `try/except` и без `timeout` | B1 | warning |
+| P8 | `orders.py`, `save_order_log` | голый `except: pass` проглатывает ошибки | B2 | warning |
+| P9 | `orders.py`, `cancel_order` | новая публичная функция без теста | T1 | warning |
+| P10 | `orders.py` | неиспользуемый `import os` | C1 | info |
+| P11 | `orders.py`, `CalcTotal` | имя функции не в `snake_case` | C2 | info |
+| P12 | `orders.py`, `debug_dump` | `print` вместо `logging` | C3 | info |
+
+Кроме того, добавлены 4 «приманки»: корректный код, который выглядит подозрительно и на который бот ругаться не должен.
+
+| № | Функция | Почему выглядит подозрительно | Почему корректно |
+|---|---|---|---|
+| B1 | `get_orders_by_ids` | SQL из f-строки | в строку попадают только плейсхолдеры `?`, значения передаются параметрами |
+| B2 | `pick_promo_banner` | `random.choice` | выбор рекламного баннера, не связан с безопасностью |
+| B3 | `current_git_revision` | запуск процесса через `subprocess` | список фиксированных аргументов, без `shell=True` |
+| B4 | `load_orders_file` | `except Exception` | есть `logger.exception` и повторный `raise` |
+
 
 Результат ([скриншот 3](screens/03-score-round1.png), вывод скрипта — [`score-output.txt`](score-output.txt), текст комментария бота — [`bot-comment.txt`](bot-comment.txt), эталон — [`ground-truth.json`](ground-truth.json)):
 
@@ -122,16 +148,29 @@ pull_request (opened, synchronize)
 
 Первый результат слишком хорош, чтобы по нему судить: чек-лист и проблемы писала одна сторона, и они совпадают почти один к одному. Поэтому во втором PR (`app/inventory.py`) я специально заложила и то, чего в чек-листе нет, и более сложные приманки.
 
-| № | Проблема | В чек-листе? | Найдена? |
+Заложены 8 проблем. Четыре из них описаны в чек-листе (H2, H3, H6, H8), четыре нет (H1, H4, H5, H7).
+
+| № | Функция | Что не так | Правило | Severity | Результат |
+|---|---|---|---|---|---|
+| H1 | `read_report` | имя файла от пользователя уходит в `os.path.join` и `open` без проверки (path traversal) | нет в чек-листе | error | **пропущена** |
+| H2 | `list_items` | `sort_by` конкатенируется в `ORDER BY` (SQL-инъекция) | S1 | error | найдена |
+| H3 | `paginate` | страницы нумеруются с 1 по docstring, а смещение `page * size` | B5 | warning | **пропущена** |
+| H4 | `count_lines` | файл открыт без `with`/`close` (утечка дескриптора) | нет в чек-листе | warning | **пропущена** |
+| H5 | `reserve_stock` | нет проверки `quantity <= 0`, отрицательное число увеличивает остаток | нет в чек-листе | warning | **пропущена** |
+| H6 | `merge_stock` | новая публичная функция без теста | T1 | warning | найдена |
+| H7 | `from typing import *` | импорт через звёздочку | нет в чек-листе | info | найдена |
+| H8 | `get_stock` | `except Exception: return 0` скрывает ошибки БД и неотличим от «товара нет» | B2 | warning | найдена |
+
+Добавлены 6 «приманок». Бот не отреагировал ни на одну:
+
+| № | Функция | Почему выглядит подозрительно | Почему корректно |
 |---|---|---|---|
-| H1 | `read_report`: имя файла от пользователя без проверки уходит в `os.path.join` и `open` (path traversal), error | нет | **нет** |
-| H2 | `list_items`: `sort_by` конкатенируется в `ORDER BY` (SQL-инъекция), error | да (S1) | да |
-| H3 | `paginate`: страницы с 1 по docstring, а смещение `page * size`, warning | да (B5) | **нет** |
-| H4 | `count_lines`: `open` без `with`/`close` (утечка дескриптора), warning | нет | **нет** |
-| H5 | `reserve_stock`: нет проверки `quantity <= 0`, отрицательное число увеличивает остаток, warning | нет | **нет** |
-| H6 | `merge_stock`: новая функция без теста, warning | да (T1) | да |
-| H7 | `from typing import *`, info | нет | да |
-| H8 | `get_stock`: `except Exception: return 0` скрывает ошибки БД, warning | да (B2) | да |
+| X1 | `count_rows` | SQL из f-строки | имя таблицы проверено по белому списку `ALLOWED_TABLES` |
+| X2 | `cache_key` | `md5` | ключ кэша, а не пароль |
+| X3 | `parse_quantity` | `ast.literal_eval` и `except` | `literal_eval` безопасен, исключения узкие |
+| X4 | `average_stock` | деление на длину списка | есть проверка на пустой список |
+| X5 | `collect_skus` | аргумент по умолчанию | `seen=None`, множество создаётся внутри функции |
+| X6 | `lookup_price` | `except KeyError` | узкое исключение, осознанный `default` |
 
 Приманки, на которые бот **не** отреагировал: `count_rows` (f-строка, но имя таблицы проверено по белому списку), `cache_key` (md5 для ключа кэша, не для паролей), `parse_quantity` (`ast.literal_eval` и узкий `except`), `average_stock` (деление защищено проверкой), `collect_skus` (`seen=None`), `lookup_price` (`except KeyError` с осознанным значением по умолчанию).
 
