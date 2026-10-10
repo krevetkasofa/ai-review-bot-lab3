@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+diff.txt
+review.md
+review.json
+orders.log
+.env

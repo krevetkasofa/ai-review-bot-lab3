@@ -1,0 +1,250 @@
+{
+  "pr_branch": "feature/orders",
+  "note": "Эталон: что именно заложено в PR. Бот этот файл не видит: он лежит в main и не входит в diff PR.",
+  "planted": [
+    {
+      "id": "P1",
+      "category": "security",
+      "expected_severity": "error",
+      "file": "app/orders.py",
+      "symbols": [
+        "find_orders_by_customer"
+      ],
+      "keywords": [
+        "инъекц",
+        "injection",
+        "f-строк",
+        "f-string",
+        "конкатенац",
+        "параметризов"
+      ],
+      "description": "SQL-запрос собирается f-строкой из параметра name (SQL injection)"
+    },
+    {
+      "id": "P2",
+      "category": "security",
+      "expected_severity": "error",
+      "file": "app/orders.py",
+      "symbols": [
+        "PAYMENT_API_KEY"
+      ],
+      "keywords": [
+        "секрет",
+        "ключ",
+        "захардкож",
+        "хардкод",
+        "hardcod",
+        "pk_demo"
+      ],
+      "description": "Ключ платёжного сервиса записан в код строкой"
+    },
+    {
+      "id": "P3",
+      "category": "security",
+      "expected_severity": "error",
+      "file": "app/auth.py",
+      "symbols": [
+        "register_user"
+      ],
+      "keywords": [
+        "md5",
+        "соль",
+        "salt",
+        "scrypt",
+        "bcrypt",
+        "pbkdf2",
+        "хеш",
+        "хэш",
+        "hash"
+      ],
+      "description": "Пароль хешируется md5 без соли"
+    },
+    {
+      "id": "P4",
+      "category": "bug",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "apply_discount"
+      ],
+      "keywords": [
+        "10 и более",
+        "off-by-one",
+        "> 10",
+        ">= 10",
+        "граничн",
+        "docstring",
+        "скидк"
+      ],
+      "description": "Скидка при «10 и более», а условие quantity > 10 (off-by-one)"
+    },
+    {
+      "id": "P5",
+      "category": "bug",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "add_item"
+      ],
+      "keywords": [
+        "mutable",
+        "изменяем",
+        "tags=[]",
+        "по умолчанию"
+      ],
+      "description": "Изменяемое значение по умолчанию tags=[]"
+    },
+    {
+      "id": "P6",
+      "category": "bug",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "average_order_value"
+      ],
+      "keywords": [
+        "ноль",
+        "zero",
+        "пуст",
+        "деление",
+        "division"
+      ],
+      "description": "Деление на len(totals) без проверки на пустой список"
+    },
+    {
+      "id": "P7",
+      "category": "bug",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "get_shipping_quote"
+      ],
+      "keywords": [
+        "timeout",
+        "таймаут",
+        "urlopen",
+        "try",
+        "except",
+        "сетев",
+        "сеть"
+      ],
+      "description": "Сетевой вызов urlopen без try/except и без timeout"
+    },
+    {
+      "id": "P8",
+      "category": "bug",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "save_order_log"
+      ],
+      "keywords": [
+        "except",
+        "проглат",
+        "swallow",
+        "голый",
+        "bare"
+      ],
+      "description": "Голый except: pass проглатывает ошибки записи журнала"
+    },
+    {
+      "id": "P9",
+      "category": "missing_test",
+      "expected_severity": "warning",
+      "file": "app/orders.py",
+      "symbols": [
+        "cancel_order"
+      ],
+      "keywords": [
+        "тест",
+        "test"
+      ],
+      "description": "Новая функция cancel_order без теста"
+    },
+    {
+      "id": "P10",
+      "category": "style",
+      "expected_severity": "info",
+      "file": "app/orders.py",
+      "symbols": [],
+      "keywords": [
+        "import os",
+        "импорт os",
+        "неиспользуем",
+        "unused"
+      ],
+      "description": "Неиспользуемый импорт os"
+    },
+    {
+      "id": "P11",
+      "category": "style",
+      "expected_severity": "info",
+      "file": "app/orders.py",
+      "symbols": [
+        "CalcTotal"
+      ],
+      "keywords": [
+        "snake",
+        "camel",
+        "именован",
+        "naming",
+        "имя"
+      ],
+      "description": "Имя функции CalcTotal не в snake_case"
+    },
+    {
+      "id": "P12",
+      "category": "style",
+      "expected_severity": "info",
+      "file": "app/orders.py",
+      "symbols": [
+        "debug_dump"
+      ],
+      "keywords": [
+        "print",
+        "logging",
+        "логирован",
+        "отладоч"
+      ],
+      "description": "print() вместо logging в коде приложения (функция debug_dump)"
+    }
+  ],
+  "baits": [
+    {
+      "id": "B1",
+      "file": "app/orders.py",
+      "symbols": [
+        "get_orders_by_ids"
+      ],
+      "keywords": [],
+      "description": "Выглядит как SQL из f-строки, но в строку попадают только плейсхолдеры ?, значения передаются параметрами (безопасно)"
+    },
+    {
+      "id": "B2",
+      "file": "app/orders.py",
+      "symbols": [
+        "pick_promo_banner"
+      ],
+      "keywords": [],
+      "description": "random.choice для выбора рекламного баннера: не security-контекст (корректно)"
+    },
+    {
+      "id": "B3",
+      "file": "app/orders.py",
+      "symbols": [
+        "current_git_revision"
+      ],
+      "keywords": [],
+      "description": "subprocess.run со списком фиксированных аргументов и без shell=True (безопасно)"
+    },
+    {
+      "id": "B4",
+      "file": "app/orders.py",
+      "symbols": [
+        "load_orders_file"
+      ],
+      "keywords": [],
+      "description": "except Exception с logger.exception и повторным raise (корректно)"
+    }
+  ]
+}
